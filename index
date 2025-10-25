@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PET Agro Registro – Caixa</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --blue:#0a1e3f;   /* azul escuro */
+    --blue-2:#133062;
+    --white:#ffffff;
+    --muted:#f2f5fb;
+    --text:#1e293b;
+    --ok:#18a957;
+    --warn:#d64545;
+    --shadow:0 12px 30px rgba(0,0,0,.08);
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:Inter,system-ui,Arial,sans-serif; color:var(--text);
+    background:linear-gradient(180deg,var(--muted),#fff 40%);
+  }
+  header{
+    background:var(--blue); color:#fff; padding:16px 20px; display:flex; align-items:center; gap:12px;
+    position:sticky; top:0; z-index:9;
+  }
+  header img{ height:42px; width:auto; filter:brightness(0) invert(1) }
+  header .title{ font-weight:700; letter-spacing:.3px }
+  .container{ max-width:1100px; margin:24px auto; padding:0 16px }
+  .card{
+    background:#fff; border-radius:var(--radius); box-shadow:var(--shadow); padding:18px; margin-bottom:18px;
+    border:1px solid #e8eef7;
+  }
+  .grid{ display:grid; gap:16px }
+  @media(min-width:900px){ .grid-2{ grid-template-columns:1fr 1fr } .grid-3{ grid-template-columns:1fr 1fr 1fr } }
+
+  h2{ margin:0 0 10px; font-size:20px }
+  label{ font-size:12px; color:#445; display:block; margin-bottom:6px }
+  input, select, textarea{
+    width:100%; padding:10px 12px; border:1px solid #d9e2f1; border-radius:12px; background:#fff; outline:none;
+  }
+  input:focus, select:focus, textarea:focus{ border-color:var(--blue-2) }
+  .row{ display:flex; gap:10px; flex-wrap:wrap }
+  .btn{
+    background:var(--blue); color:#fff; border:none; padding:10px 14px; border-radius:12px; cursor:pointer;
+    font-weight:600;
+  }
+  .btn.ghost{ background:#fff; color:var(--blue); border:1px solid var(--blue) }
+  .btn.warn{ background:var(--warn) }
+  .tag{ font-size:12px; padding:4px 8px; border-radius:999px; background:#eef3ff; color:var(--blue) }
+  .toolbar{ display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap }
+  table{ width:100%; border-collapse:collapse; font-size:14px }
+  th, td{ border-bottom:1px solid #eef1f6; padding:10px 8px; text-align:left }
+  th{ font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#546; }
+  .right{ text-align:right }
+  .ok{ color:var(--ok); font-weight:600 }
+  .bad{ color:var(--warn); font-weight:600 }
+  .pill{ padding:2px 8px; border-radius:999px; font-size:12px; }
+  .pill.in{ background:#e8f7ee; color:#0a7a3f }
+  .pill.out{ background:#fdecec; color:#b83232 }
+  .hidden{ display:none!important }
+  .notice{ font-size:13px; color:#3a4; }
+  footer{ text-align:center; color:#667; font-size:12px; margin:24px 0 40px }
+</style>
+</head>
+<body>
+
+<header>
+  <img id="logo" src="logo-pet-agro-registro.png" alt="PET Agro Registro">
+  <div>
+    <div class="title">Grupo PET Agro Registro</div>
+    <div style="font-size:12px;opacity:.8">Sistema de Caixa – Entradas, Saídas e Relatórios</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Login / Cadastro -->
+  <div id="authCard" class="card">
+    <div class="toolbar">
+      <h2>Acesso</h2>
+      <div>
+        <button class="btn" onclick="toggleAuth('login')">Entrar</button>
+        <button class="btn ghost" onclick="toggleAuth('signup')">Criar conta</button>
+      </div>
+    </div>
+    <div id="loginForm">
+      <div class="grid grid-2">
+        <div>
+          <label>Usuário</label>
+          <input id="login_user" placeholder="seu_usuario">
+        </div>
+        <div>
+          <label>Senha</label>
+          <input id="login_pass" type="password" placeholder="••••••••">
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" onclick="doLogin()">Entrar</button>
+      </div>
+    </div>
+    <div id="signupForm" class="hidden">
+      <div class="grid grid-2">
+        <div>
+          <label>Usuário</label>
+          <input id="signup_user" placeholder="novo_usuario">
+        </div>
+        <div>
+          <label>Senha</label>
+          <input id="signup_pass" type="password" placeholder="crie uma senha">
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" onclick="doSignup()">Solicitar cadastro</button>
+        <div class="notice">Após cadastro, aguarde aprovação do administrador.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Painel principal -->
+  <div id="app" class="hidden">
+    <div class="card">
+      <div class="toolbar">
+        <h2>Painel</h2>
+        <div class="row">
+          <span id="roleTag" class="tag"></span>
+          <button class="btn ghost" onclick="logout()">Sair</button>
+        </div>
+      </div>
+
+      <div class="grid grid-3">
+        <div class="card" style="margin:0">
+          <h2>Projetos</h2>
+          <div class="row">
+            <input id="proj_name" placeholder="Nome do projeto">
+            <button class="btn" onclick="addProject()">Adicionar</button>
+          </div>
+          <div id="projects_list" style="margin-top:10px"></div>
+        </div>
+
+        <div class="card" style="margin:0">
+          <h2>Novo Lançamento</h2>
+          <div class="grid">
+            <div>
+              <label>Data</label>
+              <input type="date" id="tx_date">
+            </div>
+            <div>
+              <label>Tipo</label>
+              <select id="tx_type">
+                <option value="entrada">Entrada</option>
+                <option value="saida">Saída</option>
+              </select>
+            </div>
+            <div>
+              <label>Valor (R$)</label>
+              <input type="number" step="0.01" id="tx_amount" placeholder="0,00">
+            </div>
+            <div>
+              <label>Projeto</label>
+              <select id="tx_project"></select>
+            </div>
+            <div>
+              <label>Descrição (opcional)</label>
+              <input id="tx_desc" placeholder="observações">
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn" onclick="addTransaction()">Salvar lançamento</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin:0">
+          <h2>Filtros</h2>
+          <div class="grid">
+            <div>
+              <label>Projeto</label>
+              <select id="f_project"></select>
+            </div>
+            <div>
+              <label>De</label>
+              <input type="date" id="f_from">
+            </div>
+            <div>
+              <label>Até</label>
+              <input type="date" id="f_to">
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn" onclick="loadTransactions()">Aplicar</button>
+            <button class="btn ghost" onclick="clearFilters()">Limpar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Relatórios -->
+    <div class="card">
+      <div class="toolbar">
+        <h2>Relatórios</h2>
+        <div class="row">
+          <span>Entradas: <b id="sum_in" class="ok">R$ 0,00</b></span>
+          <span>Saídas: <b id="sum_out" class="bad">R$ 0,00</b></span>
+          <span>Saldo: <b id="sum_bal">R$ 0,00</b></span>
+        </div>
+      </div>
+      <canvas id="chartProject" height="110"></canvas>
+    </div>
+
+    <!-- Tabela -->
+    <div class="card">
+      <h2>Lançamentos</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th><th>Tipo</th><th class="right">Valor (R$)</th><th>Projeto</th><th>Descrição</th><th>Criado por</th>
+          </tr>
+        </thead>
+        <tbody id="tx_table"></tbody>
+      </table>
+    </div>
+
+    <!-- Admin: aprovação -->
+    <div id="adminCard" class="card hidden">
+      <div class="toolbar">
+        <h2>Administração</h2>
+        <button class="btn" onclick="loadPending()">Recarregar pendentes</button>
+      </div>
+      <table>
+        <thead><tr><th>Usuário</th><th>Status</th><th>Ação</th></tr></thead>
+        <tbody id="pend_table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>© PET Agro Registro — Sistema de Caixa</footer>
+</div>
+
+<script>
+/* -------- CONFIG -------- */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbyG_SmUOCTttoadgq-W76d8geBW4627XpXh3VQ7S7f-Ij1fNZnpUwq-ay07_lO7OlvX/exec";
+
+/* -------- Helpers -------- */
+const $ = sel => document.querySelector(sel);
+function moneyBR(v){
+  return (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+}
+function toast(msg){ alert(msg); }
+
+let AUTH = null;
+
+/* -------- Auth UI -------- */
+function toggleAuth(which){
+  $('#loginForm').classList.toggle('hidden', which!=='login');
+  $('#signupForm').classList.toggle('hidden', which!=='signup');
+}
+toggleAuth('login');
+
+async function api(action, payload={}){
+  const body = { action, payload, auth: AUTH ? { username: AUTH.username } : null };
+  const res = await fetch(GAS_URL, { method:'POST', body: JSON.stringify(body) });
+  return res.json();
+}
+
+async function doLogin(){
+  const username = $('#login_user').value.trim();
+  const password = $('#login_pass').value;
+  const r = await api('login', { username, password });
+  if(!r.ok){ toast(r.error || 'Falha no login'); return; }
+  AUTH = r.user;
+  $('#authCard').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+  $('#roleTag').textContent = `Usuário: ${AUTH.username} (${AUTH.role})`;
+  if (AUTH.role === 'admin') $('#adminCard').classList.remove('hidden');
+  await Promise.all([loadProjects(), loadTransactions()]);
+}
+
+async function doSignup(){
+  const username = $('#signup_user').value.trim();
+  const password = $('#signup_pass').value;
+  const r = await api('signup', { username, password });
+  if(!r.ok){ toast(r.error || 'Erro no cadastro'); return; }
+  toast(r.message || 'Cadastro solicitado.');
+  toggleAuth('login');
+}
+
+function logout(){
+  AUTH = null;
+  $('#app').classList.add('hidden');
+  $('#adminCard').classList.add('hidden');
+  $('#authCard').classList.remove('hidden');
+}
+
+/* -------- Projetos -------- */
+async function loadProjects(){
+  const r = await api('listProjects');
+  const list = r.projects || [];
+  const selTx = $('#tx_project'); selTx.innerHTML='';
+  const selF  = $('#f_project');  selF.innerHTML='<option value="">Todos</option>';
+  list.forEach(p=>{
+    const o1=document.createElement('option'); o1.value=p.id; o1.textContent=p.name; selTx.appendChild(o1);
+    const o2=document.createElement('option'); o2.value=p.id; o2.textContent=p.name; selF.appendChild(o2);
+  });
+  const box = $('#projects_list'); box.innerHTML='';
+  list.forEach(p=>{
+    const div = document.createElement('div');
+    div.className='row'; div.style.justifyContent='space-between';
+    div.innerHTML = `<div><b>${p.name}</b> <span class="tag">id:${p.id.slice(0,8)}</span></div>`;
+    box.appendChild(div);
+  });
+}
+
+async function addProject(){
+  const name = $('#proj_name').value.trim();
+  if(!name) return toast('Informe o nome do projeto');
+  const r = await api('addProject',{ name });
+  if(!r.ok){ toast(r.error||'Erro'); return; }
+  $('#proj_name').value='';
+  await loadProjects();
+}
+
+/* -------- Lançamentos -------- */
+async function addTransaction(){
+  const date = $('#tx_date').value;
+  const type = $('#tx_type').value;
+  const amount = $('#tx_amount').value;
+  const project_id = $('#tx_project').value;
+  const description = $('#tx_desc').value.trim();
+  if(!date || !type || !amount || !project_id) return toast('Preencha os campos obrigatórios');
+  const r = await api('addTransaction', { date, type, amount, project_id, description });
+  if(!r.ok){ toast(r.error||'Erro'); return; }
+  $('#tx_amount').value=''; $('#tx_desc').value='';
+  await loadTransactions();
+}
+
+function currentFilters(){
+  return {
+    project_id: $('#f_project').value || undefined,
+    date_from:  $('#f_from').value || undefined,
+    date_to:    $('#f_to').value || undefined
+  };
+}
+
+function clearFilters(){
+  $('#f_project').value=''; $('#f_from').value=''; $('#f_to').value='';
+  loadTransactions();
+}
+
+async function loadTransactions(){
+  const filters = currentFilters();
+  const r = await api('listTransactions', filters);
+  if(!r.ok){ toast(r.error||'Erro'); return; }
+  const rows = r.transactions || [];
+  const tb = $('#tx_table'); tb.innerHTML='';
+  rows.forEach(t=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML = `
+      <td>${t.date}</td>
+      <td><span class="pill ${t.type==='entrada'?'in':'out'}">${t.type}</span></td>
+      <td class="right">${moneyBR(t.amount)}</td>
+      <td>${t.project_name}</td>
+      <td>${t.description||''}</td>
+      <td>${t.created_by||''}</td>`;
+    tb.appendChild(tr);
+  });
+  await loadReports();
+}
+
+/* -------- Relatórios -------- */
+let chartProj = null;
+async function loadReports(){
+  const filters = currentFilters();
+  const r = await api('reports', filters);
+  if(!r.ok){ return; }
+  const s = r.summary;
+  $('#sum_in').textContent  = moneyBR(s.total_entradas||0);
+  $('#sum_out').textContent = moneyBR(s.total_saidas||0);
+  const saldo = (s.total_entradas||0)-(s.total_saidas||0);
+  $('#sum_bal').textContent = moneyBR(saldo);
+
+  const labels = Object.keys(r.by_project||{});
+  const entries = labels.map(k => r.by_project[k].entrada||0);
+  const exits   = labels.map(k => r.by_project[k].saida||0);
+
+  const ctx = $('#chartProject');
+  if(chartProj) chartProj.destroy();
+  chartProj = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        { label:'Entradas', data:entries },
+        { label:'Saídas', data:exits }
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{ legend:{ position:'bottom' } },
+      scales:{ y:{ beginAtZero:true } }
+    }
+  });
+}
+
+/* -------- Admin -------- */
+async function loadPending(){
+  const r = await api('listPendingUsers');
+  if(!r.ok){ toast(r.error||'Erro'); return; }
+  const tb = $('#pend_table'); tb.innerHTML='';
+  (r.users||[]).forEach(u=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${u.username}</td><td>${u.status}</td>
+      <td class="row"><button class="btn" onclick="approve('${u.username}',true)">Aprovar</button>
+      <button class="btn warn" onclick="approve('${u.username}',false)">Bloquear</button
